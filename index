@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جامع تلاوات القرآن الكريم</title>
+  <style>
+    /* ── Reset & Variables ───────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:      #1a7f4b;
+      --green-dark: #115c35;
+      --green-light:#e8f5ee;
+      --gold:       #c9a84c;
+      --red:        #c0392b;
+      --bg:         #f7f3ec;
+      --card:       #ffffff;
+      --text:       #1a1a2e;
+      --muted:      #6b7280;
+      --radius:     16px;
+      --shadow:     0 8px 32px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: var(--green-dark);
+      font-weight: 800;
+    }
+    header p {
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+    }
+    .ornament {
+      color: var(--gold);
+      font-size: 1.6rem;
+      letter-spacing: 4px;
+    }
+
+    /* ── Stats Bar ───────────────────────────── */
+    #stats-bar {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .stat-chip {
+      background: var(--card);
+      border: 1px solid #e5e7eb;
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: .82rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-chip span { font-weight: 700; color: var(--green); }
+
+    /* ── Card ────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ── Ayah Display ────────────────────────── */
+    #ayah-meta {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-badge {
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    #ayah-text {
+      font-family: "KFGQPC Uthman Taha Naskh", "Amiri Quran", "Scheherazade New", serif;
+      font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+      line-height: 2.2;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: .5px;
+      min-height: 100px;
+      border: 2px dashed #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      background: var(--green-light);
+      transition: border-color .3s;
+    }
+    #ayah-text.loading {
+      color: var(--muted);
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    /* ── Waveform ────────────────────────────── */
+    canvas#waveform {
+      width: 100%;
+      height: 72px;
+      border-radius: 10px;
+      background: #111827;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    /* ── Timer ───────────────────────────────── */
+    #timer {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--red);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      min-height: 28px;
+    }
+
+    /* ── Buttons ─────────────────────────────── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 13px 28px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .1s, opacity .2s, background .2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:active { transform: scale(.97); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    #btn-record  { background: var(--green);     color: #fff; }
+    #btn-stop    { background: var(--red);        color: #fff; }
+    #btn-submit  { background: var(--gold);       color: #fff; }
+    #btn-skip    { background: #f3f4f6;           color: var(--text); }
+    #btn-play    { background: #3b82f6;           color: #fff; }
+
+    /* ── Status ──────────────────────────────── */
+    #status {
+      text-align: center;
+      margin-top: 18px;
+      font-size: .88rem;
+      min-height: 22px;
+      color: var(--muted);
+    }
+    #status.success { color: var(--green);   }
+    #status.error   { color: var(--red);     }
+    #status.info    { color: #2563eb;        }
+
+    /* ── Progress ────────────────────────────── */
+    .progress-wrap {
+      margin-top: 24px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+      border-radius: 999px;
+      transition: width .5s ease;
+    }
+
+    /* ── Toast ───────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1f2937;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: .9rem;
+      opacity: 0;
+      transition: all .4s ease;
+      pointer-events: none;
+      z-index: 999;
+      max-width: 90vw;
+      text-align: center;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ── RTL helpers ─────────────────────────── */
+    .ltr { direction: ltr; }
+  </style>
+
+  <!-- Google Fonts for Quranic text -->
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<header>
+  <div class="ornament">﴾ ﴿</div>
+  <h1>جامع التلاوات القرآنية</h1>
+  <p>سجّل صوتك لبناء قاعدة بيانات التعرف على التلاوة</p>
+</header>
+
+<!-- Stats -->
+<div id="stats-bar">
+  <div class="stat-chip">التسجيلات اليوم: <span id="s-count">—</span></div>
+  <div class="stat-chip">حجم الدُفعة الحالية: <span id="s-batch">—</span> MB</div>
+  <div class="stat-chip">الدُفعات المرفوعة: <span id="s-batches">—</span></div>
+</div>
+
+<!-- Main card -->
+<div class="card">
+
+  <div id="ayah-meta">
+    <span class="mode-badge" id="mode-badge">—</span>
+    <span id="ayah-ref" class="ltr">—</span>
+  </div>
+
+  <div id="ayah-text" class="loading">جارٍ تحميل النص…</div>
+
+  <canvas id="waveform"></canvas>
+  <div id="timer"></div>
+
+  <div class="btn-row">
+    <button id="btn-record" disabled>🎙 ابدأ التسجيل</button>
+    <button id="btn-stop"   disabled>⏹ إيقاف</button>
+    <button id="btn-play"   disabled>▶ استماع</button>
+    <button id="btn-submit" disabled>📤 إرسال</button>
+    <button id="btn-skip">⏭ تخطّي</button>
+  </div>
+
+  <div id="status">—</div>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>الدُفعة الحالية</span>
+      <span id="prog-label">0 / 500 MB</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ─────────────────────────────────────
+const BACKEND = "https://web-production-01a5.up.railway.app"; // ← change this
+
+// ── State ──────────────────────────────────────
+let currentTask   = null;
+let mediaRecorder = null;
+let audioChunks   = [];
+let audioBlob     = null;
+let audioURL      = null;
+let timerInterval = null;
+let elapsed       = 0;
+let audioCtx      = null;
+let analyserNode  = null;
+let animFrame     = null;
+
+// ── DOM ────────────────────────────────────────
+const elText    = document.getElementById("ayah-text");
+const elMeta    = document.getElementById("ayah-ref");
+const elMode    = document.getElementById("mode-badge");
+const elStatus  = document.getElementById("status");
+const elTimer   = document.getElementById("timer");
+const canvas    = document.getElementById("waveform");
+const ctx2d     = canvas.getContext("2d");
+const btnRecord = document.getElementById("btn-record");
+const btnStop   = document.getElementById("btn-stop");
+const btnPlay   = document.getElementById("btn-play");
+const btnSubmit = document.getElementById("btn-submit");
+const btnSkip   = document.getElementById("btn-skip");
+const progFill  = document.getElementById("prog-fill");
+const progLabel = document.getElementById("prog-label");
+
+// ── Mode labels ────────────────────────────────
+const MODE_LABELS = {
+  "full_verse":    "آية كاملة",
+  "bridging":      "وصل آيتين",
+  "random_window": "مقطع عشوائي",
+};
+
+// ── Toast ──────────────────────────────────────
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+// ── Status helper ──────────────────────────────
+function setStatus(msg, type = "") {
+  elStatus.textContent = msg;
+  elStatus.className   = type;
+}
+
+// ── Fetch task ─────────────────────────────────
+async function fetchTask() {
+  elText.textContent = "جارٍ تحميل النص…";
+  elText.className   = "loading";
+  setStatus("جارٍ تحميل مقطع جديد…", "info");
+  resetRecorder();
+
+  try {
+    const res  = await fetch(`${BACKEND}/get_task`);
+    if (!res.ok) throw new Error(await res.text());
+    currentTask = await res.json();
+
+    elText.textContent = currentTask.text;
+    elText.className   = "";
+    elMode.textContent = MODE_LABELS[currentTask.mode] || currentTask.mode;
+    elMeta.textContent = `سورة ${currentTask.surah} : آية ${currentTask.ayah}`;
+    btnRecord.disabled = false;
+    setStatus("اضغط ابدأ التسجيل واقرأ النص بوضوح", "");
+  } catch (e) {
+    setStatus("فشل تحميل المهمة: " + e.message, "error");
+  }
+}
+
+// ── Fetch stats ────────────────────────────────
+async function fetchStats() {
+  try {
+    const res  = await fetch(`${BACKEND}/stats`);
+    const data = await res.json();
+    document.getElementById("s-count").textContent   = data.total_recordings ?? "—";
+    document.getElementById("s-batches").textContent = data.total_batches    ?? "—";
+    document.getElementById("s-batch").textContent   = data.current_batch_mb ?? "—";
+
+    const pct = Math.min((data.current_batch_mb / 500) * 100, 100);
+    progFill.style.width   = pct + "%";
+    progLabel.textContent  = `${data.current_batch_mb} / 500 MB`;
+  } catch (_) {}
+}
+
+// ── Reset recorder state ───────────────────────
+function resetRecorder() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animFrame);
+
+  audioChunks = [];
+  audioBlob   = null;
+  if (audioURL) { URL.revokeObjectURL(audioURL); audioURL = null; }
+  elapsed     = 0;
+  elTimer.textContent = "";
+
+  btnRecord.disabled = true;
+  btnStop.disabled   = true;
+  btnPlay.disabled   = true;
+  btnSubmit.disabled = true;
+
+  // Clear waveform
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ── Timer ──────────────────────────────────────
+function startTimer() {
+  elapsed = 0;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const s = String(elapsed % 60).padStart(2, "0");
+    elTimer.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+// ── Waveform visualiser ────────────────────────
+function startVisualiser(stream) {
+  audioCtx     = new (window.AudioContext || window.webkitAudioContext)();
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 1024;
+  const src = audioCtx.createMediaStreamSource(stream);
+  src.connect(analyserNode);
+
+  const bufLen = analyserNode.frequencyBinCount;
+  const dataArr = new Uint8Array(bufLen);
+
+  function draw() {
+    animFrame = requestAnimationFrame(draw);
+    analyserNode.getByteTimeDomainData(dataArr);
+
+    const W = canvas.offsetWidth;
+    const H = canvas.height;
+    canvas.width = W;
+
+    ctx2d.fillStyle = "#111827";
+    ctx2d.fillRect(0, 0, W, H);
+
+    ctx2d.lineWidth   = 2;
+    ctx2d.strokeStyle = "#22c55e";
+    ctx2d.beginPath();
+
+    const sliceW = W / bufLen;
+    let x = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const v = dataArr[i] / 128;
+      const y = (v * H) / 2;
+      i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+      x += sliceW;
+    }
+    ctx2d.lineTo(W, H / 2);
+    ctx2d.stroke();
+  }
+  draw();
+}
+
+// ── Record ─────────────────────────────────────
+btnRecord.addEventListener("click", async () => {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setStatus("المتصفح لا يدعم التسجيل الصوتي", "error");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate:   16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      }
+    });
+
+    // Prefer WAV; fall back to webm then ogg
+    const mimeType =
+      MediaRecorder.isTypeSupported("audio/wav")        ? "audio/wav"        :
+      MediaRecorder.isTypeSupported("audio/webm;codecs=pcm") ? "audio/webm;codecs=pcm" :
+      MediaRecorder.isTypeSupported("audio/webm")       ? "audio/webm"       :
+      "audio/ogg;codecs=opus";
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 256000 });
+    audioChunks   = [];
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+      audioURL  = URL.createObjectURL(audioBlob);
+      btnPlay.disabled   = false;
+      btnSubmit.disabled = false;
+      cancelAnimationFrame(animFrame);
+      clearInterval(timerInterval);
+      setStatus("✅ التسجيل جاهز للإرسال", "success");
+    };
+
+    mediaRecorder.start(100);
+    startTimer();
+    startVisualiser(stream);
+
+    btnRecord.disabled = true;
+    btnStop.disabled   = false;
+    btnSubmit.disabled = true;
+    setStatus("🔴 جارٍ التسجيل…", "error");
+
+  } catch (e) {
+    setStatus("لم يُمنح إذن الميكروفون: " + e.message, "error");
+  }
+});
+
+// ── Stop ───────────────────────────────────────
+btnStop.addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  btnStop.disabled = true;
+});
+
+// ── Play ───────────────────────────────────────
+btnPlay.addEventListener("click", () => {
+  if (audioURL) new Audio(audioURL).play();
+});
+
+// ── Submit ─────────────────────────────────────
+btnSubmit.addEventListener("click", async () => {
+  if (!audioBlob || !currentTask) return;
+
+  btnSubmit.disabled = true;
+  btnSkip.disabled   = true;
+  setStatus("جارٍ الرفع…", "info");
+
+  const form = new FormData();
+  form.append("task_id",    currentTask.task_id);
+  form.append("transcript", currentTask.text);
+  form.append("audio",      audioBlob, `${currentTask.task_id}.wav`);
+
+  try {
+    const res  = await fetch(`${BACKEND}/submit`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    showToast("✅ تم الرفع بنجاح!");
+    setStatus("", "");
+    await fetchStats();
+    setTimeout(fetchTask, 800);
+  } catch (e) {
+    setStatus("فشل الرفع: " + e.message, "error");
+    btnSubmit.disabled = false;
+  }
+
+  btnSkip.disabled = false;
+});
+
+// ── Skip ───────────────────────────────────────
+btnSkip.addEventListener("click", fetchTask);
+
+// ── Init ───────────────────────────────────────
+(async () => {
+  await fetchTask();
+  await fetchStats();
+  setInterval(fetchStats, 30000);
+})();
+</script>
+</body>
+</html>
