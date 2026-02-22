@@ -54,26 +54,42 @@
       letter-spacing: 4px;
     }
 
-    /* ── Stats Bar ───────────────────────────── */
-    #stats-bar {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 24px;
-    }
-    .stat-chip {
+    /* ── Goal Progress ───────────────────────── */
+    #goal-wrap {
       background: var(--card);
       border: 1px solid #e5e7eb;
-      border-radius: 999px;
-      padding: 6px 18px;
-      font-size: .82rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      border-radius: 16px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+      text-align: center;
     }
-    .stat-chip span { font-weight: 700; color: var(--green); }
+    .goal-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .85rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    #goal-pct {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--green);
+    }
+    .goal-bar-bg {
+      height: 14px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .goal-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+      border-radius: 999px;
+      transition: width 1s ease;
+    }
+
 
     /* ── Card ────────────────────────────────── */
     .card {
@@ -168,7 +184,7 @@
     button:disabled { opacity: .45; cursor: not-allowed; }
 
     #btn-record  { background: var(--green);     color: #fff; }
-    #btn-stop    { background: var(--red);        color: #fff; }
+    #btn-record.recording { background: var(--red); }
     #btn-submit  { background: var(--gold);       color: #fff; }
     #btn-skip    { background: #f3f4f6;           color: var(--text); }
     #btn-play    { background: #3b82f6;           color: #fff; }
@@ -209,6 +225,50 @@
       transition: width .5s ease;
     }
 
+    /* ── Celebration ────────────────────────── */
+    #celebration {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeIn .3s ease;
+    }
+    #celebration-content {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: popIn .4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    #celebration-emoji {
+      font-size: 4rem;
+      margin-bottom: 12px;
+      animation: bounce 0.6s infinite alternate;
+    }
+    #celebration-msg {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    #celebration-sub {
+      font-size: .9rem;
+      color: var(--muted);
+    }
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 998;
+    }
+    @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+    @keyframes popIn   { from { transform:scale(0.5); opacity:0 } to { transform:scale(1); opacity:1 } }
+    @keyframes bounce  { from { transform:translateY(0) } to { transform:translateY(-10px) } }
+
     /* ── Toast ───────────────────────────────── */
     #toast {
       position: fixed;
@@ -247,11 +307,14 @@
   <p>سجّل صوتك لبناء قاعدة بيانات التعرف على التلاوة</p>
 </header>
 
-<!-- Stats -->
-<div id="stats-bar">
-  <div class="stat-chip">التسجيلات اليوم: <span id="s-count">—</span></div>
-  <div class="stat-chip">حجم الدُفعة الحالية: <span id="s-batch">—</span> MB</div>
-  <div class="stat-chip">الدُفعات المرفوعة: <span id="s-batches">—</span></div>
+<!-- Goal Progress -->
+<div id="goal-wrap">
+  <div class="goal-label">
+    <span id="goal-pct">0%</span>
+  </div>
+  <div class="goal-bar-bg">
+    <div class="goal-bar-fill" id="goal-fill" style="width:0%"></div>
+  </div>
 </div>
 
 <!-- Main card -->
@@ -269,7 +332,6 @@
 
   <div class="btn-row">
     <button id="btn-record" disabled>🎙 ابدأ التسجيل</button>
-    <button id="btn-stop"   disabled>⏹ إيقاف</button>
     <button id="btn-play"   disabled>▶ استماع</button>
     <button id="btn-submit" disabled>📤 إرسال</button>
     <button id="btn-skip">⏭ تخطّي</button>
@@ -277,19 +339,19 @@
 
   <div id="status">—</div>
 
-  <div class="progress-wrap">
-    <div class="progress-label">
-      <span>الدُفعة الحالية</span>
-      <span id="prog-label">0 / 500 MB</span>
-    </div>
-    <div class="progress-bar-bg">
-      <div class="progress-bar-fill" id="prog-fill" style="width:0%"></div>
-    </div>
-  </div>
+
 
 </div>
 
 <div id="toast"></div>
+<div id="celebration" style="display:none">
+  <div id="celebration-content">
+    <div id="celebration-emoji">🎉</div>
+    <div id="celebration-msg">جزاك الله خيراً!</div>
+    <div id="celebration-sub">تسجيلك سيساهم في خدمة القرآن الكريم</div>
+  </div>
+</div>
+<canvas id="confetti-canvas"></canvas>
 
 <script>
 // ── Config ─────────────────────────────────────
@@ -316,12 +378,11 @@ const elTimer   = document.getElementById("timer");
 const canvas    = document.getElementById("waveform");
 const ctx2d     = canvas.getContext("2d");
 const btnRecord = document.getElementById("btn-record");
-const btnStop   = document.getElementById("btn-stop");
 const btnPlay   = document.getElementById("btn-play");
 const btnSubmit = document.getElementById("btn-submit");
 const btnSkip   = document.getElementById("btn-skip");
-const progFill  = document.getElementById("prog-fill");
-const progLabel = document.getElementById("prog-label");
+
+
 
 // ── Mode labels ────────────────────────────────
 const MODE_LABELS = {
@@ -368,22 +429,24 @@ async function fetchTask() {
 }
 
 // ── Fetch stats ────────────────────────────────
+const GOAL = 1_000_000;
 async function fetchStats() {
   try {
     const res  = await fetch(`${BACKEND}/stats`);
     const data = await res.json();
-    document.getElementById("s-count").textContent   = data.total_recordings ?? "—";
-    document.getElementById("s-batches").textContent = data.total_batches    ?? "—";
-    document.getElementById("s-batch").textContent   = data.current_batch_mb ?? "—";
-
-    const pct = Math.min((data.current_batch_mb / 500) * 100, 100);
-    progFill.style.width   = pct + "%";
-    progLabel.textContent  = `${data.current_batch_mb} / 500 MB`;
+    const done = data.total_recordings ?? 0;
+    const pct  = Math.min((done / GOAL) * 100, 100);
+    const pctStr = pct < 0.01 ? "<0.01" : pct.toFixed(2);
+    document.getElementById("goal-fill").style.width = pct + "%";
+    document.getElementById("goal-pct").textContent  = pctStr + "%";
+    document.getElementById("goal-done").textContent = done.toLocaleString("ar-EG");
   } catch (_) {}
 }
 
 // ── Reset recorder state ───────────────────────
 function resetRecorder() {
+  btnRecord.textContent = "🎙 ابدأ التسجيل";
+  btnRecord.classList.remove("recording");
   if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
   clearInterval(timerInterval);
   cancelAnimationFrame(animFrame);
@@ -457,6 +520,11 @@ function startVisualiser(stream) {
 
 // ── Record ─────────────────────────────────────
 btnRecord.addEventListener("click", async () => {
+  // If currently recording, stop
+  if (btnRecord.classList.contains("recording")) {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+    return;
+  }
   if (!navigator.mediaDevices?.getUserMedia) {
     setStatus("المتصفح لا يدعم التسجيل الصوتي", "error");
     return;
@@ -484,6 +552,8 @@ btnRecord.addEventListener("click", async () => {
 
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = () => {
+      btnRecord.textContent = "🎙 ابدأ التسجيل";
+      btnRecord.classList.remove("recording");
       stream.getTracks().forEach(t => t.stop());
       audioBlob = new Blob(audioChunks, { type: "audio/wav" });
       audioURL  = URL.createObjectURL(audioBlob);
@@ -498,8 +568,8 @@ btnRecord.addEventListener("click", async () => {
     startTimer();
     startVisualiser(stream);
 
-    btnRecord.disabled = true;
-    btnStop.disabled   = false;
+    btnRecord.textContent = "⏹ إيقاف";
+    btnRecord.classList.add("recording");
     btnSubmit.disabled = true;
     setStatus("🔴 جارٍ التسجيل…", "error");
 
@@ -511,8 +581,7 @@ btnRecord.addEventListener("click", async () => {
 // ── Stop ───────────────────────────────────────
 btnStop.addEventListener("click", () => {
   if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-  btnStop.disabled = true;
-});
+  });
 
 // ── Play ───────────────────────────────────────
 btnPlay.addEventListener("click", () => {
@@ -537,10 +606,10 @@ btnSubmit.addEventListener("click", async () => {
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
 
-    showToast("✅ تم الرفع بنجاح!");
+    showCelebration();
     setStatus("", "");
     await fetchStats();
-    setTimeout(fetchTask, 800);
+    setTimeout(fetchTask, 2500);
   } catch (e) {
     setStatus("فشل الرفع: " + e.message, "error");
     btnSubmit.disabled = false;
@@ -548,6 +617,63 @@ btnSubmit.addEventListener("click", async () => {
 
   btnSkip.disabled = false;
 });
+
+// ── Celebration ────────────────────────────────
+function showCelebration() {
+  const el = document.getElementById("celebration");
+  el.style.display = "flex";
+  launchConfetti();
+  setTimeout(() => {
+    el.style.display = "none";
+    stopConfetti();
+  }, 2400);
+}
+
+// Confetti
+let confettiAnim = null;
+const COLORS = ["#22c55e","#f59e0b","#3b82f6","#ec4899","#8b5cf6","#ef4444"];
+let particles = [];
+
+function launchConfetti() {
+  const canvas = document.getElementById("confetti-canvas");
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+  particles = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height,
+    w: 8 + Math.random() * 8,
+    h: 4 + Math.random() * 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    speed: 3 + Math.random() * 5,
+    angle: Math.random() * 360,
+    spin: (Math.random() - 0.5) * 6,
+    drift: (Math.random() - 0.5) * 2,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x + p.w/2, p.y + p.h/2);
+      ctx.rotate(p.angle * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+      p.y     += p.speed;
+      p.x     += p.drift;
+      p.angle += p.spin;
+    });
+    confettiAnim = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopConfetti() {
+  if (confettiAnim) cancelAnimationFrame(confettiAnim);
+  const canvas = document.getElementById("confetti-canvas");
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+}
 
 // ── Skip ───────────────────────────────────────
 btnSkip.addEventListener("click", fetchTask);
